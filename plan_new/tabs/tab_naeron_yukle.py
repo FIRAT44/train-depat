@@ -7,6 +7,28 @@ from datetime import datetime as dt, date
 def generate_ucus_no(d, idx):
     return f"NRS-{d.strftime('%Y%m%d')}-{idx:03}"
 
+
+def format_time_cell(cell):
+    try:
+        if pd.isnull(cell):
+            return ""
+        if isinstance(cell, pd.Timedelta):
+            total_seconds = int(cell.total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            return f"{hours:02}:{minutes:02}"
+        elif isinstance(cell, str) and ("day" in cell or "hours" in cell):
+            td = pd.to_timedelta(cell)
+            total_seconds = int(td.total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            return f"{hours:02}:{minutes:02}"
+        elif isinstance(cell, (dt, pd.Timestamp)):
+            return cell.strftime("%H:%M")
+        return str(cell)
+    except:
+        return str(cell)
+
 # Belirli bir tarih için son index'i veritabanından alma
 def get_last_index_for_date(conn, d):
     query = "SELECT ucus_no FROM naeron_ucuslar WHERE ucus_no LIKE ? ORDER BY ucus_no DESC LIMIT 1"
@@ -290,7 +312,7 @@ def tab_naeron_yukle(st, secilen_tarih, conn_main):
                     return
 
                 for col in ["Off Bl.", "On Bl.", "Block Time", "Flight Time"]:
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].apply(format_time_cell)
 
                 conn = sqlite3.connect("plan_new/naeron_kayitlari.db")
                 conn.execute("""
