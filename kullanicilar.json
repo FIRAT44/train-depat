@@ -1,0 +1,50 @@
+{
+  "firat": {
+    "sifre": "1234",
+    "roller": [
+      "145",
+      "CAMO",
+      "ATO",
+      "FSTD",
+      "SMS",
+      "ADMIN"
+    ]
+  },
+  "FI": {
+    "sifre": "1234",
+    "roller": [
+      "Eğitmen"
+    ]
+  },
+  "bakim": {
+    "sifre": "1234",
+    "roller": [
+      "145",
+      "CAMO"
+    ]
+  },
+  "safety": {
+    "sifre": "1234",
+    "roller": [
+      "SMS"
+    ]
+  },
+  "MRT": {
+    "sifre": "1234",
+    "roller": [
+      "Eğitmen"
+    ]
+  },
+  "AYC": {
+    "sifre": "1234",
+    "roller": [
+      "Eğitmen"
+    ]
+  },
+  "KBG": {
+    "sifre": "1234",
+    "roller": [
+      "Eğitmen"
+    ]
+  }
+}
