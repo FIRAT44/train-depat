@@ -63,7 +63,8 @@ def plan_new_main():
         "🤖 Revize İşlemleri",
         #"✈️ Uçak Bazlı Uçuş Süresi Analizi",
         "Meteoroloji Verileri",
-        "🔄 FAMS → Naeron"
+        "🔄 FAMS → Naeron",
+        "deneme"
     ])
 
     if menu == "📋 Planlama":
@@ -156,6 +157,10 @@ def plan_new_main():
         tab_sec = st.radio("🔄 FAMS → Naeron Sekmesi", ["FAMS → Naeron"], horizontal=True)
         if tab_sec == "FAMS → Naeron":
             tab_fams_to_naeron(st, conn)
+
+    elif menu == "deneme":
+    from tabs.tab_deneme import deneme
+    deneme(st, conn)
 
     
     if st.sidebar.button("⬅️ Ana Menüye Dön", key="back_main_sinav_menu"):
