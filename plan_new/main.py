@@ -159,8 +159,8 @@ def plan_new_main():
             tab_fams_to_naeron(st, conn)
 
     elif menu == "deneme":
-    from tabs.tab_deneme import deneme
-    deneme(st, conn)
+        from tabs.tab_deneme import deneme
+        deneme(st, conn)
 
     
     if st.sidebar.button("⬅️ Ana Menüye Dön", key="back_main_sinav_menu"):
