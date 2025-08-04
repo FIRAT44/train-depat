@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import io
 
-from plan_new.tabs.utils.ozet_utils import ozet_panel_verisi_hazirla
+from tabs.utils.ozet_utils import ozet_panel_verisi_hazirla
 
 def tum_donemler_toplu_tarama(conn):
     bugun = pd.to_datetime(datetime.today().date())

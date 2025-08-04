@@ -29,7 +29,7 @@ def tab_sablon_yukle(st):
     tablo_adi = temiz_tablo_adi(sablon_adi) if sablon_adi else None
 
     if uploaded_file and sablon_adi:
-        conn = sqlite3.connect("plan_new/plan_sablonlari.db")
+        conn = sqlite3.connect("plan_sablonlari.db")
         cursor = conn.cursor()
 
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (tablo_adi,))
@@ -79,7 +79,7 @@ def tab_sablon_yukle(st):
     st.markdown("---")
     st.markdown("## 📄 Yüklenmiş Şablonları Gör")
 
-    conn = sqlite3.connect("plan_new/plan_sablonlari.db")
+    conn = sqlite3.connect("plan_sablonlari.db")
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'sablon_%'")
     tablo_isimleri = [row[0] for row in cursor.fetchall()]
@@ -107,7 +107,7 @@ def tab_sablon_yukle(st):
 
 def yeni_sablon_turet(st):
     st.subheader("🔗 Yeni Şablon Türetici")
-    conn = sqlite3.connect("plan_new/plan_sablonlari.db")
+    conn = sqlite3.connect("plan_sablonlari.db")
     cursor = conn.cursor()
 
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'sablon_%'")

@@ -6,6 +6,26 @@ from datetime import datetime as dt, date
 # Benzersiz uçuş numarası oluşturma
 def generate_ucus_no(d, idx):
     return f"NRS-{d.strftime('%Y%m%d')}-{idx:03}"
+def format_time_cell(cell):
+    try:
+        if pd.isnull(cell):
+            return ""
+        if isinstance(cell, pd.Timedelta):
+            total_seconds = int(cell.total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            return f"{hours:02}:{minutes:02}"
+        elif isinstance(cell, str) and ("day" in cell or "hours" in cell):
+            td = pd.to_timedelta(cell)
+            total_seconds = int(td.total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            return f"{hours:02}:{minutes:02}"
+        elif isinstance(cell, (dt, pd.Timestamp)):
+            return cell.strftime("%H:%M")
+        return str(cell)
+    except:
+        return str(cell)
 
 # Belirli bir tarih için son index'i veritabanından alma
 def get_last_index_for_date(conn, d):
@@ -67,7 +87,7 @@ def tab_naeron_yukle(st, secilen_tarih, conn_main):
                 return
 
             # Veritabanı ve tablo kontrolü
-            conn = sqlite3.connect("plan_new/naeron_kayitlari.db")
+            conn = sqlite3.connect("naeron_kayitlari.db")
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS naeron_ucuslar (
                     ucus_no TEXT PRIMARY KEY,
@@ -166,7 +186,7 @@ def tab_naeron_yukle(st, secilen_tarih, conn_main):
             st.dataframe(df_range, use_container_width=True)
 
             # 3) Uçuş no üretimi ve yeni kayıtları oluşturma
-            conn = sqlite3.connect("plan_new/naeron_kayitlari.db")
+            conn = sqlite3.connect("naeron_kayitlari.db")
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS naeron_ucuslar (
                     ucus_no TEXT PRIMARY KEY,
@@ -214,7 +234,7 @@ def tab_naeron_yukle(st, secilen_tarih, conn_main):
 
             # 4) Aktarma butonu
             if st.button("💾 Tarih Aralığı Verilerini Aktar"):
-                conn = sqlite3.connect("plan_new/naeron_kayitlari.db")
+                conn = sqlite3.connect("naeron_kayitlari.db")
                 df_yeni.to_sql("naeron_ucuslar", conn, if_exists="append", index=False)
 
                 # Log'u da kaydet (isteğe bağlı: başlangıç tarihiyle)
@@ -256,7 +276,7 @@ def tab_naeron_yukle(st, secilen_tarih, conn_main):
 
             st.table(secili_ay_df_view)
 
-            conn = sqlite3.connect("plan_new/naeron_kayitlari.db")
+            conn = sqlite3.connect("naeron_kayitlari.db")
             if selected_row:
                 detay_df = pd.read_sql_query("SELECT * FROM naeron_ucuslar WHERE `Uçuş Tarihi 2` = ?", conn, params=[selected_row])
                 if not detay_df.empty:
@@ -290,9 +310,9 @@ def tab_naeron_yukle(st, secilen_tarih, conn_main):
                     return
 
                 for col in ["Off Bl.", "On Bl.", "Block Time", "Flight Time"]:
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].apply(format_time_cell)
 
-                conn = sqlite3.connect("plan_new/naeron_kayitlari.db")
+                conn = sqlite3.connect("naeron_kayitlari.db")
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS naeron_ucuslar (
                         ucus_no TEXT PRIMARY KEY,
@@ -325,7 +345,7 @@ def tab_naeron_yukle(st, secilen_tarih, conn_main):
                 st.dataframe(df_yeni, use_container_width=True)
 
                 if st.button("💾 Veritabanına Aktar"):
-                    df_yeni.to_sql("plan_new/naeron_ucuslar", conn, if_exists="append", index=False)
+                    df_yeni.to_sql("naeron_ucuslar", conn, if_exists="append", index=False)
                     cursor_main = conn_main.cursor()
                     cursor_main.execute("REPLACE INTO naeron_log (tarih, kayit_sayisi) VALUES (?, ?)",
                                         (str(secilen_tarih), len(df_yeni)))

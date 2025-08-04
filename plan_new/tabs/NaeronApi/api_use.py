@@ -1,19 +1,19 @@
+#rom tabs.NaeronApi.naeron_api_client import NaeronAPIClient
 
-
-def naeron_api_use(st, conn):
-    from plan_new.tabs.NaeronApi.naeron_api_client import NaeronAPIClient
-    st.title("📡 NAERON API Kullanımı")
-    st.info("Bu sekme, NAERON API'sinden veri çekmek için kullanılabilir. Aşağıdaki örnek kodu inceleyebilirsiniz.")
+def naeron_api_use():
+    # st.title("📡 NAERON API Kullanımı")
+    # st.info("Bu sekme, NAERON API'sinden veri çekmek için kullanılabilir. Aşağıdaki örnek kodu inceleyebilirsiniz.")
 
     import requests
     import pandas as pd
 
     # 1. API URL
-    url = "https://jsonplaceholder.typicode.com/posts"
+    url = "https://api.naeron.com:3110/v1/tableNames"
 
     # 2. API Key yok çünkü bu public ama senin sistemde buraya eklenir:
     headers = {
-        "Accept": "application/json"
+        "Accept": "application/json",
+        "x-api-key":"H4sIAAAAAAAAA1M1MkqszEot0ctLTC3Kz9NLzs9VNTICAL+no2wWAAAA"
         # "Authorization": "Bearer YOUR_API_KEY"  ← gerçek API’de bu olacak
     }
 
@@ -24,14 +24,21 @@ def naeron_api_use(st, conn):
     if response.status_code == 200:
         data = response.json()
         df = pd.DataFrame(data)
-        print(df.head())  # İlk 5 kaydı yazdır
-        st.dataframe(df.head())
-        st.success("API'den veriler başarıyla çekildi. Konsolda çıktıları görebilirsiniz.")
-        st.info("Bu sekme, NAERON API'sinden veri çekmek için kullanılabilir. Aşağıdaki örnek kodu inceleyebilirsiniz.")
+        # 5. DataFrame olarak yazdır
+        # tüm verileri bir json dosyasına kaydetmek istersen:
+        df.to_json("naeron_api_data.json", orient="records", lines=True)
+        print("Veri Başarıyla Alındı!")
+        print("İlk 5 kayıt:")
+        # st.write(df.head())  # Streamlit ile görüntülemek için
+        print(df)  # İlk 5 kaydı yazdır
+        # st.dataframe(df.head())
+        # st.success("API'den veriler başarıyla çekildi. Konsolda çıktıları görebilirsiniz.")
+        # st.info("Bu sekme, NAERON API'sinden veri çekmek için kullanılabilir. Aşağıdaki örnek kodu inceleyebilirsiniz.")
         
     else:
-        print("Hata:", response.status_code)
+        print("Hata:", response)
     
+naeron_api_use()
     # # Naeron API ayarları
     # API_BASE_URL = "https://api.naeron.com"       # örnek
     # API_KEY = "senin_gizli_api_keyin"             # API Key burada

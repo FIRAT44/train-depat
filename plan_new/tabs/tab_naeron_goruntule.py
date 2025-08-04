@@ -7,7 +7,7 @@ def tab_naeron_goruntule(st):
     st.subheader("🗂 Naeron Veritabanını Görüntüle, Filtrele, Düzelt, Sil")
 
     try:
-        conn = sqlite3.connect("plan_new/naeron_kayitlari.db")
+        conn = sqlite3.connect("naeron_kayitlari.db")
         df = pd.read_sql_query("SELECT rowid, * FROM naeron_ucuslar", conn)
 
         if df.empty:
@@ -47,108 +47,81 @@ def tab_naeron_goruntule(st):
 
         # 🔄 Toplu Düzeltmeler
         with st.expander("🔄 Toplu Düzeltmeler"):
-            if st.button("Görev sütunundaki '*' işaretlerini temizle"):
+            if st.button("🛠️ Tüm Düzeltmeleri Uygula"):
                 cursor = conn.cursor()
-                cursor.execute("""
+                sql_statements = [
+                    # '*' işaretlerini temizle
+                    """
                     UPDATE naeron_ucuslar
                     SET "Görev" = REPLACE("Görev", '*', '')
                     WHERE "Görev" LIKE '%*%'
+                    """,
+                    # SXC ve diğer görev güncellemeleri
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'SXC-12' WHERE \"Görev\" = 'SXC-12 (C)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'SXC-10' WHERE \"Görev\" = 'SXC-10 (C)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'SXC-11' WHERE \"Görev\" = 'SXC-11 (C)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'EGT. TKR. (SE)' WHERE \"Görev\" = 'EÐT. TKR.(SE)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'E-EGT.TKR.(SE)' WHERE \"Görev\" = 'E-EÐT.TKR.(SE)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'EGT.TKR(SIM)' WHERE \"Görev\" = 'EĞT.TKR(SIM)'",
+                    # PIF görevleri
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-13' WHERE \"Görev\" = 'PIF-13 (ME/SIM)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-14' WHERE \"Görev\" = 'PIF-14 (ME/SIM)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-15' WHERE \"Görev\" = 'PIF-15 (ME/SIM)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-16' WHERE \"Görev\" = 'PIF-16 (ME/SIM)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-17' WHERE \"Görev\" = 'PIF-17 (ME/SIM)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-18' WHERE \"Görev\" = 'PIF-18 (ME/SIM)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-19' WHERE \"Görev\" = 'PIF-19 (ME/SIM)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-20' WHERE \"Görev\" = 'PIF-20(ME/IR)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-21' WHERE \"Görev\" = 'PIF-21(ME/IR)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-22' WHERE \"Görev\" = 'PIF-22(ME/IR)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-23' WHERE \"Görev\" = 'PIF-23(ME/IR)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-24' WHERE \"Görev\" = 'PIF-24(ME/IR)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-25' WHERE \"Görev\" = 'PIF-25(ME/IR)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-26' WHERE \"Görev\" = 'PIF-26(ME/IR)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-27' WHERE \"Görev\" = 'PIF-27(ME/IR)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-28' WHERE \"Görev\" = 'PIF-28(ME/IR)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'PIF-29PT' WHERE \"Görev\" = 'PIF-29PT(ME/IR)'",
+                    # SXC-7/8/9
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'SXC-7'  WHERE \"Görev\" = 'SXC-7(C)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'SXC-8'  WHERE \"Görev\" = 'SXC-8(C)'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'SXC-9'  WHERE \"Görev\" = 'SXC-9(C)'",
+                    # CR-S/T
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'CR-S/T' WHERE \"Görev\" = 'ME CR ST'",
+                    # Dönem bazlı MCC-A-* ve EGT.TKR(SIM)
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'MCC-A-12PT' WHERE \"Görev\" = 'MCC-A-12 PT' AND \"Öğrenci Pilot\" LIKE '127%'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'MCC-A-12PT' WHERE \"Görev\" = 'MCC-A-12 PT' AND \"Öğrenci Pilot\" LIKE '128%'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'MCC-12PT' WHERE \"Görev\" = 'MCC-A-12PT'   AND \"Öğrenci Pilot\" LIKE '131%'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'MCC-A-1'    WHERE \"Görev\" = 'MCC A-1'      AND \"Öğrenci Pilot\" LIKE '132%'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'MCC-A-2'    WHERE \"Görev\" = 'MCC A-2'      AND \"Öğrenci Pilot\" LIKE '132%'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'MCC-A-9'    WHERE \"Görev\" = 'MCC A-9'      AND \"Öğrenci Pilot\" LIKE '132%'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'MCC-A-10'   WHERE \"Görev\" = 'MCC A-10'     AND \"Öğrenci Pilot\" LIKE '132%'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'MCC-A-6'   WHERE \"Görev\" = 'MCC A-6'     AND \"Öğrenci Pilot\" LIKE '132%'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'MCC-A-8'   WHERE \"Görev\" = 'MCC A-8'     AND \"Öğrenci Pilot\" LIKE '132%'",
+                    # ... diğer 132.* MCC-A-* görevleri benzer biçimde ...
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'EGT.TKR(SIM)' WHERE \"Görev\" = 'EÐT.TKR(SIM)' AND \"Öğrenci Pilot\" LIKE '127%'",
+                    "UPDATE naeron_ucuslar SET \"Görev\" = 'EGT.TKR(SIM)' WHERE \"Görev\" = 'EÐT.TKR(SIM)' AND \"Öğrenci Pilot\" LIKE '128%'"
+                ]
+                # Saat sütunlarını da tek sorguda düzelt
+                sql_statements.append("""
+                    UPDATE naeron_ucuslar
+                    SET
+                        "Off Bl."    = substr("Off Bl.",    1, 5),
+                        "On Bl."     = substr("On Bl.",     1, 5),
+                        "Block Time" = substr("Block Time", 1, 5),
+                        "Flight Time"= substr("Flight Time",1, 5)
+                    WHERE
+                        "Off Bl." LIKE '%:%' OR
+                        "On Bl."  LIKE '%:%' OR
+                        "Block Time" LIKE '%:%' OR
+                        "Flight Time" LIKE '%:%'
                 """)
+
+                for stmt in sql_statements:
+                    cursor.execute(stmt)
                 conn.commit()
-                st.success("✅ Görev sütunundaki tüm '*' işaretleri kaldırıldı.")
+                st.success("✅ Tüm toplu düzeltmeler tamamlandı.")
                 st.rerun()
 
-            if st.button("Öğrenci Pilot '130AH - Ali HAMAL' olanları güncelle"):
-                cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE naeron_ucuslar
-                    SET "Öğrenci Pilot" = '130AH - Ali HAMAL'
-                    WHERE "Öğrenci Pilot" = '130AH'
-                """)
-                conn.commit()
-                st.success("✅ '130NV' olan öğrenci pilotlar '130NV - Nisa Nur VARLI' olarak güncellendi.")
-                st.rerun()
-            
-            if st.button("Görev 'SXC-12-C' → 'SXC-12' olarak güncelle"):
-                cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE naeron_ucuslar
-                    SET "Görev" = 'SXC-12'
-                    WHERE "Görev" = 'SXC-12 (C)'
-                """)
-                conn.commit()
-                st.success("✅ 'SXC-12-C' olan tüm kayıtlar 'SXC-12' olarak güncellendi.")
-                st.rerun()
- 
-            if st.button("Görev 'SXC-10-C' → 'SXC-10' olarak güncelle"):
-                cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE naeron_ucuslar
-                    SET "Görev" = 'SXC-10'
-                    WHERE "Görev" = 'SXC-10 (C)'
-                """)
-                conn.commit()
-                st.success("✅ 'SXC-10-C' → 'SXC-10' tamamlandı.")
-                st.rerun()
-
-            if st.button("Görev 'SXC-11-C' → 'SXC-11' olarak güncelle"):
-                cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE naeron_ucuslar
-                    SET "Görev" = 'SXC-11'
-                    WHERE "Görev" = 'SXC-11 (C)'
-                """)
-                conn.commit()
-                st.success("✅ 'SXC-11-C' → 'SXC-11' tamamlandı.")
-                st.rerun()
-            
-            if st.button("Görev 'EÐT. TKR.(SE)' → 'EGT. TKR. (SE)' olarak güncelle"):
-                cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE naeron_ucuslar
-                    SET "Görev" = 'EGT. TKR. (SE)'
-                    WHERE "Görev" = 'EÐT. TKR.(SE)'
-                """)
-                conn.commit()
-                st.success("✅ 'EÐT. TKR.(SE)' → 'EGT. TKR. (SE)' tamamlandı.")
-                st.rerun()
-
-            if st.button("Görev 'E-EÐT.TKR.(SE)' → 'E-EGT.TKR.(SE)' olarak güncelle"):
-                cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE naeron_ucuslar
-                    SET "Görev" = 'E-EGT.TKR.(SE)'
-                    WHERE "Görev" = 'E-EÐT.TKR.(SE)'
-                """)
-                conn.commit()
-                st.success("✅ 'E-EÐT.TKR.(SE)' → 'E-EGT.TKR.(SE)' tamamlandı.")
-                st.rerun()
-            
-            if st.button("Görev 'EĞT.TKR(SIM)' → 'EGT.TKR(SIM)' olarak güncelle"):
-                cursor = conn.cursor()
-                cursor.execute("""
-                    UPDATE naeron_ucuslar
-                    SET "Görev" = 'EGT.TKR(SIM)'
-                    WHERE "Görev" = 'EĞT.TKR(SIM)'
-                """)
-                conn.commit()
-                st.success("✅ 'EĞT.TKR(SIM)' → 'EGT.TKR(SIM)' tamamlandı.")
-                st.rerun()
-
-
-
-
-        if st.button("🕒 Tüm saat sütunlarını HH:MM formatına dönüştür"):
-            cursor = conn.cursor()
-            for col in ["Off Bl.", "On Bl.", "Block Time", "Flight Time"]:
-                cursor.execute(f'''
-                    UPDATE naeron_ucuslar
-                    SET "{col}" = substr("{col}", 1, 5)
-                    WHERE "{col}" LIKE '%:%'
-                ''')
-            conn.commit()
-            st.success("✅ Tüm saat sütunları HH:MM formatına güncellendi.")
-            st.rerun()
 
 
 

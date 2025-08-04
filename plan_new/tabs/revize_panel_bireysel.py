@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import io
 import time
-from plan_new.tabs.utils.ozet_utils import ozet_panel_verisi_hazirla
+from tabs.utils.ozet_utils import ozet_panel_verisi_hazirla
 
 def timed(fn):
     def wrapper(*args, **kwargs):

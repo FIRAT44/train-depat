@@ -1,7 +1,7 @@
 # tabs/tab_donem_ogrenci_yonetimi.py
 import pandas as pd
 import streamlit as st
-from plan_new.tabs.donem_bilgileri import donem_bilgileri
+from tabs.donem_bilgileri import donem_bilgileri
 
 def tab_donem_ogrenci_yonetimi(st, conn):
     st.subheader("📚 Dönem ve Öğrenci Yönetimi")

@@ -21,7 +21,7 @@ def plan_naeron_eslestirme_ve_elle_duzeltme(st):
 
     # PLAN VERİ
     try:
-        conn_plan = sqlite3.connect("plan_new/ucus_egitim.db")
+        conn_plan = sqlite3.connect("ucus_egitim.db")
         df_plan = pd.read_sql_query("SELECT * FROM ucus_planlari", conn_plan, parse_dates=["plan_tarihi"])
         df_plan["sure_str"] = df_plan["sure"].apply(format_sure)
     except Exception as e:
@@ -30,7 +30,7 @@ def plan_naeron_eslestirme_ve_elle_duzeltme(st):
 
     # NAERON VERİ
     try:
-        conn_naeron = sqlite3.connect("plan_new/naeron_kayitlari.db")
+        conn_naeron = sqlite3.connect("naeron_kayitlari.db")
         df_naeron = pd.read_sql_query("SELECT * FROM naeron_ucuslar", conn_naeron)
     except Exception as e:
         st.error(f"Naeron verisi okunamadı: {e}")
@@ -76,7 +76,7 @@ def plan_naeron_eslestirme_ve_elle_duzeltme(st):
             st.download_button(
                 label="📥 Excel Olarak İndir",
                 data=buffer.getvalue(),
-                file_name="plan_new/eksik_naeron_kayitlari.xlsx",
+                file_name="eksik_naeron_kayitlari.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
         else:

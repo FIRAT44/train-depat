@@ -3,7 +3,9 @@ import pandas as pd
 import streamlit as st
 import sqlite3
 from datetime import datetime,timedelta
-from plan_new.tabs.plan_naeron_eslestirme_paneli import plan_naeron_eslestirme_ve_elle_duzeltme
+from tabs.plan_naeron_eslestirme_paneli import plan_naeron_eslestirme_ve_elle_duzeltme
+import re
+import io
 
 def tab_gerceklesen_kayit(st, conn):
     st.subheader("🛬 Gerçekleşen Uçuş Süresi Girişi")
@@ -15,7 +17,15 @@ def tab_gerceklesen_kayit(st, conn):
 
     with sekme2:
         st.subheader("📊 Plan - Gerçekleşme Özeti")
-
+        st.markdown("""
+            **Durum Açıklamaları:**
+            - 🟢 Uçuş Yapıldı: Planlanan görev başarıyla uçulmuş.
+            - 🟣 Eksik Uçuş Saati: Uçulmuş ama süre yetersiz.
+            - 🔴 Eksik: Planlanan ama hiç uçulmamış.
+            - 🟤 Eksik - Beklemede: Takip eden uçuşlar gerçekleşmiş ama bu görev atlanmış.
+            - 🟡 Teorik Ders: Sadece teorik plan.
+            - ⚪ / 🔷: Phase başarıyla tamamlanmış.
+            """)
         # Plan verisini çek
         df = pd.read_sql_query("SELECT * FROM ucus_planlari", conn, parse_dates=["plan_tarihi"])
         if df.empty:
@@ -30,15 +40,51 @@ def tab_gerceklesen_kayit(st, conn):
             key="ozet_ogrenci"
         )
         df_ogrenci = df[df["ogrenci_kodu"] == secilen_kod].sort_values("plan_tarihi")
+        
 
         # Naeron verisini çek
         try:
-            conn_naeron = sqlite3.connect("plan_new/naeron_kayitlari.db")
-            df_naeron = pd.read_sql_query("SELECT * FROM naeron_ucuslar", conn_naeron)
+            conn_naeron = sqlite3.connect("naeron_kayitlari.db")
+            df_naeron_raw = pd.read_sql_query("SELECT * FROM naeron_ucuslar", conn_naeron)
             conn_naeron.close()
 
-            df_naeron["ogrenci_kodu"] = df_naeron["Öğrenci Pilot"].str.split("-").str[0].str.strip()
-            df_naeron = df_naeron[df_naeron["ogrenci_kodu"] == secilen_kod]
+            # MCC çoklu öğrenci ayrıştırma fonksiyonu
+            # --- MCC Çoklu Öğrenci Ayrıştırma (Long Format) ---
+            def mcc_coklu_ogrenci(df_naeron):
+                mask = df_naeron["Görev"].astype(str).str.upper().str.startswith("MCC")
+                df_mcc = df_naeron[mask].copy()
+                def extract_ogrenciler(pilot_str):
+                    return re.findall(r"\d{3}[A-Z]{2}", str(pilot_str).upper())
+
+                rows = []
+                for _, row in df_mcc.iterrows():
+                    kodlar = extract_ogrenciler(row["Öğrenci Pilot"])
+                    for kod in kodlar:
+                        new_row = row.copy()
+                        new_row["ogrenci_kodu"] = kod
+                        rows.append(new_row)
+                return pd.DataFrame(rows)
+
+            df_naeron_mcc = mcc_coklu_ogrenci(df_naeron_raw)
+
+            # Tek öğrenci görevleri
+            mask_mcc = df_naeron_raw["Görev"].astype(str).str.upper().str.startswith("MCC")
+            df_naeron_other = df_naeron_raw[~mask_mcc].copy()
+            df_naeron_other["ogrenci_kodu"] = (
+                df_naeron_other["Öğrenci Pilot"].str.split("-").str[0].str.strip()
+            )
+
+            # Birleştir ve tüm veride long format
+            df_naeron_all = pd.concat([df_naeron_mcc, df_naeron_other], ignore_index=True)
+
+            # Görev isimleri normalize etme fonksiyonu
+            def normalize_task(name):
+                return re.sub(r"[\s\-]+", "", str(name)).upper()
+
+            df_naeron_all["gorev_norm"] = df_naeron_all["Görev"].apply(normalize_task)
+
+            # Seçilen öğrenciye göre filtrele
+            df_naeron = df_naeron_all[df_naeron_all["ogrenci_kodu"] == secilen_kod].copy()
 
             # Yardımcı dönüştürücüler
             def to_saat(sure_str):
@@ -203,6 +249,115 @@ def tab_gerceklesen_kayit(st, conn):
                     .rename(columns={"phase": "Phase"}),
                     use_container_width=True
                 )
+            # --- 📤 Tüm Öğrencileri Döneme Göre Toplu Excel ile İndir ---
+            st.markdown("---")
+            st.markdown("### 📥 Tüm Öğrencilerin Plan - Gerçekleşme Özeti (Excel)")
+
+            donemler = pd.read_sql_query("SELECT DISTINCT donem FROM ucus_planlari", conn)["donem"].dropna().unique().tolist()
+            donem_secimi = st.selectbox("📆 Dönemi Seçiniz", options=donemler, key="excel_donem_secimi")
+
+            if st.button("📥 Excel Olarak İndir (Toplu Öğrenci Özeti)"):
+
+                df_all = pd.read_sql_query("SELECT * FROM ucus_planlari", conn, parse_dates=["plan_tarihi"])
+                df_all["ogrenci_kodu"] = df_all["ogrenci"].str.split("-").str[0].str.strip()
+                df_all = df_all[df_all["donem"] == donem_secimi]
+
+                conn_naeron = sqlite3.connect("naeron_kayitlari.db")
+                df_naeron_raw = pd.read_sql_query("SELECT * FROM naeron_ucuslar", conn_naeron)
+                conn_naeron.close()
+
+                # MCC ayrıştırması
+                def mcc_coklu(df):
+                    mask = df["Görev"].astype(str).str.upper().str.startswith("MCC")
+                    df_mcc = df[mask].copy()
+                    def extract_ogrenciler(pilot_str):
+                        return re.findall(r"\d{3}[A-Z]{2}", str(pilot_str).upper())
+                    rows = []
+                    for _, row in df_mcc.iterrows():
+                        for kod in extract_ogrenciler(row["Öğrenci Pilot"]):
+                            r = row.copy()
+                            r["ogrenci_kodu"] = kod
+                            rows.append(r)
+                    return pd.DataFrame(rows)
+
+                df_mcc = mcc_coklu(df_naeron_raw)
+                df_other = df_naeron_raw[~df_naeron_raw["Görev"].astype(str).str.upper().str.startswith("MCC")].copy()
+                df_other["ogrenci_kodu"] = df_other["Öğrenci Pilot"].str.split("-").str[0].str.strip()
+                df_naeron_all = pd.concat([df_mcc, df_other], ignore_index=True)
+
+                df_naeron_all["gorev_norm"] = df_naeron_all["Görev"].apply(lambda x: re.sub(r"[\s\-]+", "", str(x)).upper())
+
+                def to_saat(s):
+                    try:
+                        if pd.isna(s) or s == "":
+                            return 0
+                        parts = [int(p) for p in str(s).split(":")]
+                        return parts[0] + parts[1]/60 + (parts[2] if len(parts)>2 else 0)/3600
+                    except:
+                        return 0
+
+                def format_sure(h):
+                    neg = h < 0
+                    h_abs = abs(h)
+                    return f"{'-' if neg else ''}{int(h_abs):02}:{int(round((h_abs - int(h_abs)) * 60)):02}"
+
+                # Export işlemi
+                import io
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+                    for kod in df_all["ogrenci_kodu"].unique():
+                        df_o = df_all[df_all["ogrenci_kodu"] == kod].copy()
+                        df_n = df_naeron_all[df_naeron_all["ogrenci_kodu"] == kod].copy()
+
+                        def eslesen_block(gorev):
+                            return df_n[df_n["Görev"] == gorev]["Block Time"].apply(to_saat).sum()
+
+                        df_o["planlanan_saat_ondalik"] = df_o["sure"].apply(to_saat)
+                        df_o["gerceklesen_saat_ondalik"] = df_o["gorev_ismi"].apply(eslesen_block)
+                        df_o["fark_saat_ondalik"] = df_o["gerceklesen_saat_ondalik"] - df_o["planlanan_saat_ondalik"]
+                        df_o["Planlanan"] = df_o["planlanan_saat_ondalik"].apply(format_sure)
+                        df_o["Gerçekleşen"] = df_o["gerceklesen_saat_ondalik"].apply(format_sure)
+
+                        def durum(row):
+                            if row["Planlanan"] == "00:00":
+                                return "🟡 Teorik Ders"
+                            elif row["fark_saat_ondalik"] >= 0:
+                                return "🟢 Uçuş Yapıldı"
+                            elif row["Gerçekleşen"] != "00:00":
+                                return "🟣 Eksik Uçuş Saati"
+                            else:
+                                return "🔴 Eksik"
+                        df_o["durum"] = df_o.apply(durum, axis=1)
+
+                        # Phase tamamlanmışsa düzelt
+                        if "phase" in df_o.columns:
+                            df_o["phase"] = df_o["phase"].astype(str).str.strip()
+                            ph_sum = df_o.groupby("phase").agg({
+                                "planlanan_saat_ondalik":"sum", "gerceklesen_saat_ondalik":"sum"
+                            }).reset_index()
+                            ph_sum["fark"] = ph_sum["gerceklesen_saat_ondalik"] - ph_sum["planlanan_saat_ondalik"]
+                            tamam = ph_sum[ph_sum["fark"] >= 0]["phase"].tolist()
+
+                            def phase_durum(row):
+                                if row.get("phase") in tamam and row["durum"] in ["🟣 Eksik Uçuş Saati","🔴 Eksik"]:
+                                    if row["Gerçekleşen"] == "00:00":
+                                        return "⚪ Phase Tamamlandı - Uçuş Yapılmadı"
+                                    return "🔷 Phase Tamamlandı - 🟣 Eksik Uçuş Saati"
+                                return row["durum"]
+
+                            df_o["durum"] = df_o.apply(phase_durum, axis=1)
+
+                        export = df_o[["plan_tarihi", "gorev_ismi", "Planlanan", "Gerçekleşen", "durum"]].copy()
+                        export.to_excel(writer, sheet_name=str(kod)[:31], index=False)
+
+                output.seek(0)
+                st.download_button(
+                    label="📁 Excel Dosyasını İndir",
+                    data=output,
+                    file_name=f"{donem_secimi}_tum_ogrenciler_ozet.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
 
         except Exception as e:
             st.error(f"Naeron verisi alınamadı: {e}")
