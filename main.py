@@ -166,8 +166,8 @@ def main():
             back_to_main()
     elif mod == "uçuş_planlama":
         st.subheader("Uçuş Planlama Modülü")
-        from plan_new.main import plan_new_main
-        plan_new_main()
+        if st.button("⬅️ Ana Menüye Dön", key="back_main_uçak_planlama"):
+            back_to_main()
 
 
     elif mod == "🚨 SMS / Hazard Raporlama":
