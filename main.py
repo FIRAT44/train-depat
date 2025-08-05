@@ -6,6 +6,7 @@ from tabs.istatistik import istatistik
 from tabs.yardim import yardim
 from utils.user_manage import kullanicilari_yukle
 from sms_app.streamlit_app import sms_app
+from plan_new import main as plan_new_main
 
 KULLANICILAR = kullanicilari_yukle()
 
@@ -167,7 +168,9 @@ def main():
     elif mod == "uçuş_planlama":
         st.subheader("Uçuş Planlama Modülü")
         if st.button("⬅️ Ana Menüye Dön", key="back_main_uçak_planlama"):
-            back_to_main()
+            plan_new_main.main()
+            
+
 
 
     elif mod == "🚨 SMS / Hazard Raporlama":
